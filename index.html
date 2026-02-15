@@ -2,17 +2,20 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: black; }
+        body { margin: 0; overflow: hidden; }
+        /* Video başlayana kadar resmin nerede taranacağını gösteren yardımcı çizgi (isteğe bağlı) */
+        #ui { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: white; z-index: 10; font-family: sans-serif; text-shadow: 1px 1px 2px black; }
     </style>
 </head>
 <body>
+    <div id="ui">Resmi kameraya gösterin</div>
+
     <a-scene 
-        mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no; uiScanning: no;" 
-        color-space="sRGB" 
+        mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiLoading: no; uiScanning: yes;" 
+        embedded color-space="sRGB" 
         renderer="colorManagement: true, physicallyCorrectLights" 
         vr-mode-ui="enabled: false" 
         device-orientation-permission-ui="enabled: false">
@@ -25,33 +28,47 @@
                    crossorigin="anonymous" 
                    playsinline 
                    webkit-playsinline 
-                   muted>
-            </video>
+                   muted></video>
         </a-assets>
 
-        <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;"></a-camera>
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        <a-entity id="target" mindar-image-target="targetIndex: 0">
-            <a-video src="#arVideo" width="1" height="0.75" position="0 0 0"></a-video>
+        <a-entity id="mytarget" mindar-image-target="targetIndex: 0">
+            <a-video src="#arVideo" width="1" height="0.6" position="0 0 0"></a-video>
         </a-entity>
     </a-scene>
 
     <script>
         const video = document.querySelector('#arVideo');
-        const target = document.querySelector('#target');
+        const target = document.querySelector('#mytarget');
+        const uiText = document.querySelector('#ui');
 
-        // Otomatik başlatma denemesi (Kullanıcı etkileşimi olmadan video sesi çıkmaz)
+        // Sayfaya bir kez dokunulduğunda videonun kilidini aç (Tarayıcı kuralı)
+        document.body.addEventListener('click', () => {
+            video.play();
+            video.pause(); // Sadece yetki almak için oynat-durdur yapıyoruz
+            uiText.innerHTML = "AR Hazır, tabloyu tarayın";
+        }, {once: true});
+
+        // Hedef bulunduğunda
         target.addEventListener("targetFound", () => {
+            console.log("Hedef bulundu, video başlatılıyor...");
+            uiText.style.display = "none";
+            video.muted = false; // Video bulununca sesi açar
             video.play();
         });
 
+        // Hedef kaybedildiğinde
         target.addEventListener("targetLost", () => {
+            console.log("Hedef kayboldu.");
             video.pause();
+            uiText.style.display = "block";
         });
 
-        // Hata ayıklama için (Ekran hala beyazsa telefonun konsoluna hata basar)
-        window.addEventListener("error", function (e) {
-            console.log("Hata oluştu: " + e.message);
+        // Video dosyasının yüklenip yüklenmediğini kontrol et
+        video.addEventListener('error', (e) => {
+            console.error("Video dosyası yüklenemedi! Dosya adını kontrol edin.");
+            uiText.innerHTML = "Hata: Video bulunamadı!";
         });
     </script>
 </body>
