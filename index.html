@@ -1,75 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>İstanbul'un Fethi AR</title>
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
-
-    <style>
-        body { margin: 0; overflow: hidden; font-family: sans-serif; }
-        
-        /* Loading yazısını ve tarama çizgilerini gizle (Temiz ekran) */
-        .arjs-loader { display: none !important; }
-        
-        /* Kullanıcıya ses ipucu (İstersen bunu da silebilirsin) */
-        #sound-hint {
-            position: fixed; bottom: 20px; width: 100%; text-align: center;
-            color: rgba(255, 255, 255, 0.7); font-size: 12px; pointer-events: none;
-            z-index: 999; animation: fadeOut 5s forwards;
-        }
-        
-        @keyframes fadeOut { 0% {opacity: 1;} 80% {opacity: 1;} 100% {opacity: 0;} }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Video Deneyimi</title>
+  <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.1/dist/mindar-image-aframe.prod.js"></script>
 </head>
 <body>
+  <a-scene mindar-image="imageTargetSrc: ./targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-assets>
+      <video id="ar-video" src="https://cdn.aframe.io/videos/bunny.mp4" preload="auto" loop="true" playsinline webkit-playsinline muted></video>
+    </a-assets>
 
-    <div id="sound-hint">🔊 Ses için ekrana dokun</div>
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no; uiScanning: no; filterMinCF:0.0001; filterBeta: 0.001;" 
-             color-space="sRGB" 
-             renderer="colorManagement: true, physicallyCorrectLights" 
-             vr-mode-ui="enabled: false" 
-             device-orientation-permission-ui="enabled: false">
-        
-        <a-assets>
-            <video id="vid" src="./video.mp4" 
-                   preload="auto" loop="true" crossorigin="anonymous" 
-                   playsinline webkit-playsinline 
-                   muted autoplay></video>
-        </a-assets>
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-video src="#ar-video" position="0 0 0" height="1" width="1" rotation="0 0 0"></a-video>
+    </a-entity>
+  </a-scene>
 
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  <script>
+    // Video ve hedef elementi seç
+    const video = document.querySelector("#ar-video");
+    const target = document.querySelector("a-entity[mindar-image-target]");
 
-        <a-entity mindar-image-target="targetIndex: 0" id="target-entity">
-            <a-video src="#vid" position="0 0 0" height="1.4" width="1" rotation="0 0 0"></a-video>
-        </a-entity>
-    </a-scene>
+    // Hedef görüntü bulunduğunda videoyu oynat
+    target.addEventListener("targetFound", () => {
+      console.log("Hedef bulundu, video oynatılıyor.");
+      video.play();
+    });
 
-    <script>
-        const video = document.getElementById('vid');
-        const target = document.getElementById('target-entity');
-
-        // 1. Hedef Bulunduğunda (Video zaten autoplay ama garantiye alalım)
-        target.addEventListener("targetFound", () => {
-            console.log("Resim canlandı!");
-            video.play();
-        });
-
-        // 2. Hedef Kaybolduğunda
-        target.addEventListener("targetLost", () => {
-            console.log("Durduruldu.");
-            video.pause();
-        });
-
-        // 3. SESİ AÇMA HİLESİ
-        // Kullanıcı ekrana dokunduğu an sesi açıyoruz
-        document.body.addEventListener('click', () => {
-            video.muted = false;
-        });
-        document.body.addEventListener('touchstart', () => {
-            video.muted = false;
-        });
-    </script>
+    // Hedef görüntü kaybolduğunda videoyu durdur
+    target.addEventListener("targetLost", () => {
+      console.log("Hedef kayboldu, video durduruluyor.");
+      video.pause();
+    });
+  </script>
 </body>
 </html>
