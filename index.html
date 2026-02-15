@@ -1,57 +1,108 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
-    <style>
-      /* Kamera izin ekranı gelene kadar kullanıcıyı bilgilendirmek için */
-      #scanning-overlay {
-        display: none;
-      }
-    </style>
-  </head>
-  <body>
-    <a-scene 
-      mindar-image="imageTargetSrc: ./targets.mind; uiScanning: #scanning-overlay;" 
-      color-space="sRGB" 
-      renderer="colorManagement: true, physicallyCorrectLights" 
-      vr-mode-ui="enabled: false" 
-      device-orientation-permission-ui="enabled: false">
-      
-      <a-assets>
-        <video id="ar-video" src="./202602151139.mp4" loop="true" crossorigin="anonymous" playsinline muted></video>
-      </a-assets>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>AR Resim Canlandırma</title>
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
-      <a-entity id="target" mindar-image-target="targetIndex: 0">
-        <a-video src="#ar-video" width="1" height="0.6" position="0 0 0"></a-video>
-      </a-entity>
-    </a-scene>
+  <!-- MindAR -->
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
-    <script>
-      const video = document.querySelector('#ar-video');
-      const target = document.querySelector('#target');
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
 
-      // AR Sahnesi yüklendiğinde
-      document.querySelector('a-scene').addEventListener("arReady", (event) => {
-        console.log("MindAR hazır!");
-      });
+    #loading {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: white;
+      background: rgba(0,0,0,0.6);
+      padding: 8px 12px;
+      border-radius: 8px;
+      z-index: 999;
+    }
+  </style>
+</head>
 
-      // Hata durumunda
-      document.querySelector('a-scene').addEventListener("arError", (event) => {
-        console.error("AR Başlatılamadı:", event);
-        alert("Kamera izni veya dosya yolu hatası!");
-      });
+<body>
 
-      target.addEventListener("targetFound", () => {
-        console.log("Hedef bulundu");
-        video.play();
-      });
+<div id="loading">Kamera açılıyor...</div>
 
-      target.addEventListener("targetLost", () => {
-        video.pause();
-      });
-    </script>
-  </body>
+<a-scene
+  mindar-image="imageTargetSrc: targets.mind; autoStart: true;"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+  embedded
+  color-space="sRGB"
+  renderer="colorManagement: true, physicallyCorrectLights"
+>
+
+  <!-- Video -->
+  <a-assets>
+    <video 
+      id="video"
+      src="video.mp4"
+      preload="auto"
+      loop
+      muted
+      playsinline
+      webkit-playsinline
+      crossorigin="anonymous"
+    ></video>
+  </a-assets>
+
+  <!-- Target -->
+  <a-entity mindar-image-target="targetIndex: 0">
+    
+    <a-video
+      id="videoPlane"
+      src="#video"
+      width="1"
+      height="0.7"
+      position="0 0 0"
+      rotation="0 0 0"
+    ></a-video>
+
+  </a-entity>
+
+  <!-- Kamera -->
+  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+</a-scene>
+
+<script>
+  const video = document.querySelector("#video");
+  const target = document.querySelector("[mindar-image-target]");
+  const loading = document.querySelector("#loading");
+
+  // Kamera hazır olunca yazıyı kaldır
+  document.querySelector("a-scene").addEventListener("loaded", () => {
+    loading.innerText = "Resmi kameraya göster 📷";
+  });
+
+  // Resim algılanınca video başlat
+  target.addEventListener("targetFound", () => {
+    console.log("Resim bulundu");
+    video.play();
+  });
+
+  // Resim kaybolunca durdur
+  target.addEventListener("targetLost", () => {
+    console.log("Resim kayboldu");
+    video.pause();
+  });
+
+  // iPhone için kullanıcı etkileşimi gerekebilir
+  document.body.addEventListener("click", () => {
+    video.play();
+  });
+</script>
+
+</body>
 </html>
