@@ -2,61 +2,56 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; }
-        /* Başlat butonu: Tarayıcıların kamera ve video engeline karşı */
-        #startButton {
-            position: fixed; top: 10px; left: 10px; z-index: 999;
-            padding: 10px 20px; background: #007bff; color: white;
-            border: none; border-radius: 5px; cursor: pointer;
-        }
+        body { margin: 0; overflow: hidden; background-color: black; }
     </style>
 </head>
 <body>
-    <button id="startButton">AR Deneyimini Başlat</button>
-
     <a-scene 
-        id="scene"
-        mindar-image="imageTargetSrc: ./targets.mind; autoStart: false;" 
-        embedded color-space="sRGB" 
+        mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no; uiScanning: no;" 
+        color-space="sRGB" 
         renderer="colorManagement: true, physicallyCorrectLights" 
         vr-mode-ui="enabled: false" 
         device-orientation-permission-ui="enabled: false">
       
         <a-assets>
-            <video id="arVideo" src="./202602151139.mp4" loop="true" crossorigin="anonymous" playsinline muted></video>
+            <video id="arVideo" 
+                   src="./202602151139.mp4" 
+                   preload="auto" 
+                   loop="true" 
+                   crossorigin="anonymous" 
+                   playsinline 
+                   webkit-playsinline 
+                   muted>
+            </video>
         </a-assets>
 
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;"></a-camera>
 
         <a-entity id="target" mindar-image-target="targetIndex: 0">
-            <a-video src="#arVideo" width="1" height="0.6" position="0 0 0"></a-video>
+            <a-video src="#arVideo" width="1" height="0.75" position="0 0 0"></a-video>
         </a-entity>
     </a-scene>
 
     <script>
-        const startButton = document.querySelector('#startButton');
-        const sceneEl = document.querySelector('#scene');
         const video = document.querySelector('#arVideo');
         const target = document.querySelector('#target');
 
-        // Butona tıklandığında kamera sistemini ve videoyu hazırla
-        startButton.addEventListener('click', () => {
-            const { systems } = sceneEl;
-            systems['mindar-image-system'].start(); // Kamerayı başlat
-            video.play().then(() => video.pause()); // Videoyu belleğe al
-            startButton.style.display = 'none';
-        });
-
+        // Otomatik başlatma denemesi (Kullanıcı etkileşimi olmadan video sesi çıkmaz)
         target.addEventListener("targetFound", () => {
-            console.log("Hedef bulundu!");
-            video.muted = false; // Bulunduğunda sesi açabilirsin
             video.play();
         });
 
         target.addEventListener("targetLost", () => {
             video.pause();
+        });
+
+        // Hata ayıklama için (Ekran hala beyazsa telefonun konsoluna hata basar)
+        window.addEventListener("error", function (e) {
+            console.log("Hata oluştu: " + e.message);
         });
     </script>
 </body>
