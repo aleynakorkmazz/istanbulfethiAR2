@@ -3,83 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>AR Deneyimi v1.0</title>
+    <title>AR Fetih Deneyimi</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-        /* TAM EKRAN SORUNUNU ÇÖZEN CSS */
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; /* Kaydırma çubuklarını engeller */
-            background-color: black;
+        /* Tam ekran ayarları */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
+        
+        /* Başlatma Ekranı Tasarımı */
+        #start-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999;
         }
         
-        /* A-Frame sahnesinin tüm ekranı kaplaması için */
-        a-scene {
-            width: 100vw;
-            height: 100vh;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-
-        /* LOG VE VERSİYON PANELİ */
-        #debug-ui {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            z-index: 9999; /* Kameranın üstünde durması için */
-            font-family: monospace;
-        }
-
-        #version-btn {
-            background: rgba(0, 0, 0, 0.7);
-            color: #00ff00;
-            border: 1px solid #00ff00;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
+        #start-btn {
+            padding: 15px 40px;
+            font-size: 18px;
             font-weight: bold;
-        }
-
-        #log-console {
-            display: none; /* Başlangıçta gizli */
-            margin-top: 10px;
-            width: 300px;
-            height: 200px;
-            background: rgba(0, 0, 0, 0.85);
             color: white;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-y: auto;
-            font-size: 12px;
-            border: 1px solid #444;
+            background: linear-gradient(45deg, #ff0000, #990000);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 2px; }
-        .log-info { color: #81d4fa; }
-        .log-warn { color: #ffca28; }
-        .log-error { color: #ff5252; }
+        #status-text {
+            color: #ccc; margin-top: 15px; font-family: monospace; font-size: 14px; text-align: center;
+        }
+
+        /* Video gizli ama hazırda bekler */
+        a-scene { width: 100%; height: 100%; position: absolute; }
     </style>
 </head>
 <body>
 
-    <div id="debug-ui">
-        <button id="version-btn" onclick="toggleLogs()">Versiyon: v1.0 | Loglar</button>
-        <div id="log-console">
-            <div class="log-entry log-info">Sistem başlatılıyor...</div>
-        </div>
+    <div id="start-overlay">
+        <button id="start-btn">DENEYİMİ BAŞLAT</button>
+        <div id="status-text">Kamera ve Video izni bekleniyor...</div>
     </div>
 
     <a-scene 
-        mindar-image="imageTargetSrc: ./aley/targets.mind; autoStart: true; uiLoading: yes; uiScanning: yes;" 
+        mindar-image="imageTargetSrc: ./aley/targets.mind; autoStart: false; uiLoading: no; uiScanning: no;" 
         color-space="sRGB" 
         renderer="colorManagement: true, physicallyCorrectLights" 
         vr-mode-ui="enabled: false" 
@@ -92,84 +63,77 @@
                    loop="true" 
                    crossorigin="anonymous" 
                    playsinline 
-                   webkit-playsinline 
-                   muted> </video>
+                   webkit-playsinline>
+            </video>
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
         <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
-            <a-video src="#arVideo" width="1" height="0.56" position="0 0 0"></a-video>
+            <a-video src="#arVideo" width="1" height="0.6" position="0 0 0"></a-video>
         </a-entity>
     </a-scene>
 
     <script>
-        // --- LOG SİSTEMİ ---
-        const logConsole = document.getElementById('log-console');
-        const versionBtn = document.getElementById('version-btn');
-        let logsVisible = false;
-
-        function toggleLogs() {
-            logsVisible = !logsVisible;
-            logConsole.style.display = logsVisible ? 'block' : 'none';
-            versionBtn.style.background = logsVisible ? 'rgba(0, 50, 0, 0.9)' : 'rgba(0, 0, 0, 0.7)';
-        }
-
-        // Ekrana log basma fonksiyonu
-        function screenLog(message, type = 'info') {
-            const entry = document.createElement('div');
-            entry.className = `log-entry log-${type}`;
-            // Saat ekle
-            const time = new Date().toLocaleTimeString();
-            entry.innerText = `[${time}] ${message}`;
-            logConsole.appendChild(entry);
-            logConsole.scrollTop = logConsole.scrollHeight; // Otomatik aşağı kaydır
-            console.log(message); // Normal konsola da yaz
-        }
-
-        // --- AR MANTIĞI ---
-        const video = document.querySelector('#arVideo');
-        const target = document.querySelector('#target-entity');
+        const startOverlay = document.getElementById('start-overlay');
+        const startBtn = document.getElementById('start-btn');
+        const statusText = document.getElementById('status-text');
         const scene = document.querySelector('a-scene');
+        const video = document.getElementById('arVideo');
+        const target = document.getElementById('target-entity');
 
-        // 1. Sahne Hazır mı?
-        scene.addEventListener("arReady", () => {
-            screenLog("AR Sistemi Hazır! Kamerayı resme tutun.", "info");
-        });
+        // --- 1. BAŞLAT BUTONUNA BASINCA ---
+        startBtn.addEventListener('click', () => {
+            statusText.innerText = "Kamera başlatılıyor...";
+            startBtn.style.display = "none";
 
-        // 2. Hata Yakalama
-        scene.addEventListener("arError", (event) => {
-            screenLog("AR Hatası: " + JSON.stringify(event.detail), "error");
-            screenLog("Dosya yollarını (./aley/...) kontrol edin.", "warn");
-        });
-
-        // 3. Hedef Bulundu
-        target.addEventListener("targetFound", () => {
-            screenLog("Hedef (Resim) Bulundu!", "info");
-            video.play();
-            // Eğer kullanıcı ekrana dokunduysa sesi açabiliriz
-            video.muted = false; 
-        });
-
-        // 4. Hedef Kayboldu
-        target.addEventListener("targetLost", () => {
-            screenLog("Hedef Kayboldu.", "warn");
-            video.pause();
-        });
-
-        // 5. Video Yükleme Hatası Kontrolü
-        video.addEventListener("error", () => {
-            screenLog("Video dosyası yüklenemedi! './aley/video.mp4' yolunu kontrol edin.", "error");
-        });
-
-        // Kullanıcı ekrana dokununca sesi aktif et
-        document.body.addEventListener('click', () => {
+            // Videoyu sessiz başlatıp durduruyoruz (Tarayıcı kilidini açmak için)
+            video.muted = true;
             video.play().then(() => {
                 video.pause();
-                screenLog("Ses kilidi açıldı.", "info");
-            }).catch(e => {});
-        }, {once: true});
+                video.currentTime = 0;
+            }).catch((err) => {
+                console.error("Video hatası:", err);
+                statusText.innerText = "Hata: Video yüklenemedi!";
+            });
 
+            // MindAR sistemini başlat
+            if (scene.systems['mindar-image-system']) {
+                scene.systems['mindar-image-system'].start();
+            } else {
+                // Sahne tam yüklenmemişse biraz bekle
+                scene.addEventListener('loaded', () => {
+                    scene.systems['mindar-image-system'].start();
+                });
+            }
+        });
+
+        // --- 2. KAMERA HAZIR OLDUĞUNDA ---
+        scene.addEventListener("arReady", () => {
+            // Arayüzü tamamen kaldır
+            startOverlay.style.display = "none";
+        });
+
+        // --- 3. HATA YAKALAMA (Dosya yolu yanlışsa burası çalışır) ---
+        scene.addEventListener("arError", (event) => {
+            startOverlay.style.display = "flex";
+            startBtn.style.display = "block";
+            statusText.innerText = "HATA: Dosyalar bulunamadı!\n'aley' klasörünü kontrol et.";
+            statusText.style.color = "#ff4444";
+        });
+
+        // --- 4. RESİM BULUNDUĞUNDA ---
+        target.addEventListener("targetFound", () => {
+            console.log("Hedef bulundu");
+            video.muted = false; // Sesi aç
+            video.play();
+        });
+
+        // --- 5. RESİM KAYBOLDUĞUNDA ---
+        target.addEventListener("targetLost", () => {
+            console.log("Hedef kayboldu");
+            video.pause();
+        });
     </script>
 </body>
 </html>
