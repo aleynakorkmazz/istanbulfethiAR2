@@ -3,51 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>AR Fetih Deneyimi</title>
+    <title>AR Debug Modu</title>
     
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-        /* Tam ekran ayarları */
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
+        body { margin: 0; background: #000; overflow: hidden; }
         
-        /* Başlatma Ekranı Tasarımı */
-        #start-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 9999;
+        /* HATA EKRANI STİLİ */
+        #debug-console {
+            position: fixed; top: 0; left: 0; width: 100%; height: 50%;
+            background: rgba(255, 0, 0, 0.2); /* Hafif kırmızı zemin */
+            color: lime; /* Yeşil yazılar */
+            font-family: monospace; font-size: 14px;
+            padding: 10px; box-sizing: border-box;
+            z-index: 999999; pointer-events: none;
+            overflow-y: scroll;
+            text-shadow: 1px 1px 1px black;
         }
         
         #start-btn {
-            padding: 15px 40px;
-            font-size: 18px;
-            font-weight: bold;
-            color: white;
-            background: linear-gradient(45deg, #ff0000, #990000);
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
+            z-index: 10000; padding: 20px 40px; font-size: 20px;
+            background: white; color: black; border: none; font-weight: bold;
         }
-
-        #status-text {
-            color: #ccc; margin-top: 15px; font-family: monospace; font-size: 14px; text-align: center;
-        }
-
-        /* Video gizli ama hazırda bekler */
-        a-scene { width: 100%; height: 100%; position: absolute; }
     </style>
 </head>
 <body>
 
-    <div id="start-overlay">
-        <button id="start-btn">DENEYİMİ BAŞLAT</button>
-        <div id="status-text">Kamera ve Video izni bekleniyor...</div>
-    </div>
+    <div id="debug-console">Sistem Başlatılıyor...<br></div>
+    
+    <button id="start-btn">KAMERAYI AÇ</button>
 
     <a-scene 
         mindar-image="imageTargetSrc: ./aley/targets.mind; autoStart: false; uiLoading: no; uiScanning: no;" 
@@ -59,81 +46,88 @@
         <a-assets>
             <video id="arVideo" 
                    src="./aley/video.mp4" 
-                   preload="auto" 
-                   loop="true" 
-                   crossorigin="anonymous" 
-                   playsinline 
-                   webkit-playsinline>
+                   preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline>
             </video>
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
-            <a-video src="#arVideo" width="1" height="0.6" position="0 0 0"></a-video>
+        <a-entity id="target" mindar-image-target="targetIndex: 0">
+            <a-video src="#arVideo" width="1" height="0.56" position="0 0 0"></a-video>
         </a-entity>
     </a-scene>
 
     <script>
-        const startOverlay = document.getElementById('start-overlay');
+        const debugBox = document.getElementById('debug-console');
         const startBtn = document.getElementById('start-btn');
-        const statusText = document.getElementById('status-text');
         const scene = document.querySelector('a-scene');
         const video = document.getElementById('arVideo');
-        const target = document.getElementById('target-entity');
 
-        // --- 1. BAŞLAT BUTONUNA BASINCA ---
+        // Ekrana yazı yazma fonksiyonu
+        function log(msg) {
+            debugBox.innerHTML += ">> " + msg + "<br>";
+            console.log(msg);
+        }
+
+        // 1. Tarayıcı ve HTTPS Kontrolü
+        window.onload = function() {
+            log("Sayfa Yüklendi.");
+            if (location.protocol !== 'https:') {
+                log("HATA: Site HTTPS değil! Kamera açılmaz.");
+            } else {
+                log("HTTPS güvenli bağlantı: OK");
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                log("HATA: Tarayıcın kamerayı desteklemiyor veya izin yok.");
+            } else {
+                log("Kamera donanımı algılandı.");
+            }
+        };
+
+        // 2. Butona basınca başlat
         startBtn.addEventListener('click', () => {
-            statusText.innerText = "Kamera başlatılıyor...";
-            startBtn.style.display = "none";
+            log("Butona basıldı, video hazırlanıyor...");
+            startBtn.style.display = 'none';
 
-            // Videoyu sessiz başlatıp durduruyoruz (Tarayıcı kilidini açmak için)
+            // Videoyu tetikle
             video.muted = true;
             video.play().then(() => {
                 video.pause();
-                video.currentTime = 0;
-            }).catch((err) => {
-                console.error("Video hatası:", err);
-                statusText.innerText = "Hata: Video yüklenemedi!";
+                log("Video oynatma izni alındı.");
+            }).catch(e => {
+                log("UYARI: Video izni alınamadı: " + e.message);
             });
 
-            // MindAR sistemini başlat
+            // MindAR'ı başlat
+            log("MindAR sistemi başlatılıyor...");
             if (scene.systems['mindar-image-system']) {
                 scene.systems['mindar-image-system'].start();
             } else {
-                // Sahne tam yüklenmemişse biraz bekle
-                scene.addEventListener('loaded', () => {
-                    scene.systems['mindar-image-system'].start();
-                });
+                log("HATA: MindAR sistemi bulunamadı!");
             }
         });
 
-        // --- 2. KAMERA HAZIR OLDUĞUNDA ---
+        // 3. MindAR Olayları
         scene.addEventListener("arReady", () => {
-            // Arayüzü tamamen kaldır
-            startOverlay.style.display = "none";
+            log("BAŞARILI: Kamera açıldı ve AR hazır!");
+            debugBox.style.background = "rgba(0, 255, 0, 0.2)"; // Başarılıysa yeşil zemin
         });
 
-        // --- 3. HATA YAKALAMA (Dosya yolu yanlışsa burası çalışır) ---
         scene.addEventListener("arError", (event) => {
-            startOverlay.style.display = "flex";
-            startBtn.style.display = "block";
-            statusText.innerText = "HATA: Dosyalar bulunamadı!\n'aley' klasörünü kontrol et.";
-            statusText.style.color = "#ff4444";
+            log("KRİTİK HATA: AR Sistemi çöktü!");
+            log("Detay: " + JSON.stringify(event.detail));
+            
+            if (event.detail && event.detail.error === 'LOAD_IMAGE_TARGET_FAILED') {
+                 log("SEBEP: targets.mind dosyası okunamadı veya bozuk!");
+                 log("Yol kontrolü: ./aley/targets.mind");
+            }
         });
 
-        // --- 4. RESİM BULUNDUĞUNDA ---
-        target.addEventListener("targetFound", () => {
-            console.log("Hedef bulundu");
-            video.muted = false; // Sesi aç
-            video.play();
-        });
-
-        // --- 5. RESİM KAYBOLDUĞUNDA ---
-        target.addEventListener("targetLost", () => {
-            console.log("Hedef kayboldu");
-            video.pause();
-        });
+        // Global hata yakalayıcı
+        window.onerror = function(message, source, lineno, colno, error) {
+            log("JavaScript Hatası: " + message);
+        };
     </script>
 </body>
 </html>
