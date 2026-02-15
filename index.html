@@ -1,51 +1,37 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>İstanbul'un Fethi AR Experience</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-</head>
-<body style="margin: 0px; overflow: hidden;">
+<script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
-        
+<body style="margin: 0px; overflow: hidden;">
+    <div id="instruction" style="position: fixed; top: 10px; width: 100%; text-align: center; z-index: 10; color: white; background: rgba(0,0,0,0.5);">
+        Lütfen kameraya izin verin ve resme tutun. (Video için ekrana 1 kez dokunun)
+    </div>
+
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-assets>
             <video id="feth-video" 
                    src="202602151139 (1).mp4" 
                    preload="auto" 
-                   response-type="arraybuffer" 
                    loop="true" 
                    crossorigin="anonymous" 
-                   webkit-playsinline 
-                   playsinline>
-            </video>
+                   playsinline 
+                   webkit-playsinline
+                   muted> </video>
         </a-assets>
 
-        <a-marker type="pattern" url="pattern-marker.patt" id="marker">
-            <a-video src="#feth-video" 
-                     width="1.6" 
-                     height="0.9" 
-                     position="0 0 0" 
-                     rotation="-90 0 0">
-            </a-video>
+        <a-marker type="pattern" url="pattern-marker.patt">
+            <a-video src="#feth-video" width="1.6" height="0.9" rotation="-90 0 0"></a-video>
         </a-marker>
 
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        // Tarayıcı kısıtlamaları nedeniyle videoyu başlatmak için ekrana bir kez dokunmak gerekebilir
-        const marker = document.querySelector('#marker');
-        const video = document.querySelector('#feth-video');
-
-        marker.addEventListener('markerFound', function() {
-            video.play();
-        });
-
-        marker.addEventListener('markerLost', function() {
-            video.pause();
+        // Ekrana tıklandığında videonun sesini aç ve oynatmayı garantile
+        window.addEventListener('click', function () {
+            var v = document.querySelector('#feth-video');
+            v.play();
+            v.muted = false; // Tıklamadan sonra sesi açabilirsin
+            document.getElementById('instruction').style.display = 'none';
         });
     </script>
 </body>
-</html>
