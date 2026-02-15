@@ -2,50 +2,31 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>İstanbul AR - Video Fix</title>
+    <title>İstanbul'un Fethi AR</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
         body { margin: 0; overflow: hidden; font-family: sans-serif; }
         
-        /* Loading ikonunu gizle */
+        /* Loading yazısını ve tarama çizgilerini gizle (Temiz ekran) */
         .arjs-loader { display: none !important; }
         
-        /* BAŞLANGIÇ EKRANI */
-        #start-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: black; z-index: 9999; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: white; text-align: center;
+        /* Kullanıcıya ses ipucu (İstersen bunu da silebilirsin) */
+        #sound-hint {
+            position: fixed; bottom: 20px; width: 100%; text-align: center;
+            color: rgba(255, 255, 255, 0.7); font-size: 12px; pointer-events: none;
+            z-index: 999; animation: fadeOut 5s forwards;
         }
         
-        button {
-            padding: 20px 40px; font-size: 24px; background: red; color: white; 
-            border: none; border-radius: 10px; margin-top: 20px;
-        }
-
-        /* HATA GÜNLÜĞÜ (Ekrana hata basar) */
-        #debug-log {
-            position: fixed; top: 10px; left: 10px; color: yellow; 
-            background: rgba(0,0,0,0.5); padding: 5px; z-index: 10000;
-            max-width: 80%; pointer-events: none; font-size: 14px;
-        }
-        
-        #version { position: fixed; bottom: 5px; right: 5px; color: lime; z-index: 10000; font-size: 10px; }
+        @keyframes fadeOut { 0% {opacity: 1;} 80% {opacity: 1;} 100% {opacity: 0;} }
     </style>
 </head>
 <body>
 
-    <div id="version">v2.0 - Video Force Fix</div>
-    <div id="debug-log">Sistem Hazır. Başlat'a basın.</div>
+    <div id="sound-hint">🔊 Ses için ekrana dokun</div>
 
-    <div id="start-screen">
-        <h1>AR BAŞLAT</h1>
-        <button id="start-btn">TIKLA VE BAŞLAT</button>
-    </div>
-
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no;" 
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind; uiLoading: no; uiScanning: no; filterMinCF:0.0001; filterBeta: 0.001;" 
              color-space="sRGB" 
              renderer="colorManagement: true, physicallyCorrectLights" 
              vr-mode-ui="enabled: false" 
@@ -54,61 +35,40 @@
         <a-assets>
             <video id="vid" src="./video.mp4" 
                    preload="auto" loop="true" crossorigin="anonymous" 
-                   playsinline webkit-playsinline muted></video>
+                   playsinline webkit-playsinline 
+                   muted autoplay></video>
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
         <a-entity mindar-image-target="targetIndex: 0" id="target-entity">
-            <a-plane color="red" position="0 0 -0.1" width="1" height="1.4"></a-plane>
-            
             <a-video src="#vid" position="0 0 0" height="1.4" width="1" rotation="0 0 0"></a-video>
         </a-entity>
     </a-scene>
 
     <script>
-        const startBtn = document.getElementById('start-btn');
-        const overlay = document.getElementById('start-screen');
         const video = document.getElementById('vid');
-        const debug = document.getElementById('debug-log');
         const target = document.getElementById('target-entity');
 
-        function log(msg) {
-            debug.innerHTML = msg;
-            console.log(msg);
-        }
-
-        startBtn.addEventListener('click', () => {
-            overlay.style.display = 'none';
-            // Videoyu tetikle
-            video.play().then(() => {
-                video.pause();
-                log("Video motoru hazırlandı. Resmi gösterin.");
-            }).catch(e => {
-                log("HATA: Video yüklenemedi! " + e);
-            });
-        });
-
+        // 1. Hedef Bulunduğunda (Video zaten autoplay ama garantiye alalım)
         target.addEventListener("targetFound", () => {
-            log("Resim Bulundu! Video Başlıyor...");
-            video.muted = false; // Sesi açmayı dene
-            var playPromise = video.play();
-            
-            if (playPromise !== undefined) {
-                playPromise.then(_ => {
-                    log("Video oynuyor.");
-                })
-                .catch(error => {
-                    log("Otomatik oynatma engellendi. Sessiz deneniyor...");
-                    video.muted = true; // Hata verirse sesi kapatıp tekrar dene
-                    video.play();
-                });
-            }
+            console.log("Resim canlandı!");
+            video.play();
         });
 
+        // 2. Hedef Kaybolduğunda
         target.addEventListener("targetLost", () => {
-            log("Resim Kayboldu. Video Durdu.");
+            console.log("Durduruldu.");
             video.pause();
+        });
+
+        // 3. SESİ AÇMA HİLESİ
+        // Kullanıcı ekrana dokunduğu an sesi açıyoruz
+        document.body.addEventListener('click', () => {
+            video.muted = false;
+        });
+        document.body.addEventListener('touchstart', () => {
+            video.muted = false;
         });
     </script>
 </body>
