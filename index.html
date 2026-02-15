@@ -1,75 +1,175 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>AR Deneyimi v1.0</title>
+    
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+
     <style>
-        body { margin: 0; overflow: hidden; }
-        /* Video başlayana kadar resmin nerede taranacağını gösteren yardımcı çizgi (isteğe bağlı) */
-        #ui { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: white; z-index: 10; font-family: sans-serif; text-shadow: 1px 1px 2px black; }
+        /* TAM EKRAN SORUNUNU ÇÖZEN CSS */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Kaydırma çubuklarını engeller */
+            background-color: black;
+        }
+        
+        /* A-Frame sahnesinin tüm ekranı kaplaması için */
+        a-scene {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* LOG VE VERSİYON PANELİ */
+        #debug-ui {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 9999; /* Kameranın üstünde durması için */
+            font-family: monospace;
+        }
+
+        #version-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #log-console {
+            display: none; /* Başlangıçta gizli */
+            margin-top: 10px;
+            width: 300px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-y: auto;
+            font-size: 12px;
+            border: 1px solid #444;
+        }
+
+        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 2px; }
+        .log-info { color: #81d4fa; }
+        .log-warn { color: #ffca28; }
+        .log-error { color: #ff5252; }
     </style>
 </head>
 <body>
-    <div id="ui">Resmi kameraya gösterin</div>
+
+    <div id="debug-ui">
+        <button id="version-btn" onclick="toggleLogs()">Versiyon: v1.0 | Loglar</button>
+        <div id="log-console">
+            <div class="log-entry log-info">Sistem başlatılıyor...</div>
+        </div>
+    </div>
 
     <a-scene 
-        mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiLoading: no; uiScanning: yes;" 
-        embedded color-space="sRGB" 
+        mindar-image="imageTargetSrc: ./aley/targets.mind; autoStart: true; uiLoading: yes; uiScanning: yes;" 
+        color-space="sRGB" 
         renderer="colorManagement: true, physicallyCorrectLights" 
         vr-mode-ui="enabled: false" 
         device-orientation-permission-ui="enabled: false">
       
         <a-assets>
             <video id="arVideo" 
-                   src="./202602151139.mp4" 
+                   src="./aley/video.mp4" 
                    preload="auto" 
                    loop="true" 
                    crossorigin="anonymous" 
                    playsinline 
                    webkit-playsinline 
-                   muted></video>
+                   muted> </video>
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        <a-entity id="mytarget" mindar-image-target="targetIndex: 0">
-            <a-video src="#arVideo" width="1" height="0.6" position="0 0 0"></a-video>
+        <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
+            <a-video src="#arVideo" width="1" height="0.56" position="0 0 0"></a-video>
         </a-entity>
     </a-scene>
 
     <script>
-        const video = document.querySelector('#arVideo');
-        const target = document.querySelector('#mytarget');
-        const uiText = document.querySelector('#ui');
+        // --- LOG SİSTEMİ ---
+        const logConsole = document.getElementById('log-console');
+        const versionBtn = document.getElementById('version-btn');
+        let logsVisible = false;
 
-        // Sayfaya bir kez dokunulduğunda videonun kilidini aç (Tarayıcı kuralı)
-        document.body.addEventListener('click', () => {
+        function toggleLogs() {
+            logsVisible = !logsVisible;
+            logConsole.style.display = logsVisible ? 'block' : 'none';
+            versionBtn.style.background = logsVisible ? 'rgba(0, 50, 0, 0.9)' : 'rgba(0, 0, 0, 0.7)';
+        }
+
+        // Ekrana log basma fonksiyonu
+        function screenLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            // Saat ekle
+            const time = new Date().toLocaleTimeString();
+            entry.innerText = `[${time}] ${message}`;
+            logConsole.appendChild(entry);
+            logConsole.scrollTop = logConsole.scrollHeight; // Otomatik aşağı kaydır
+            console.log(message); // Normal konsola da yaz
+        }
+
+        // --- AR MANTIĞI ---
+        const video = document.querySelector('#arVideo');
+        const target = document.querySelector('#target-entity');
+        const scene = document.querySelector('a-scene');
+
+        // 1. Sahne Hazır mı?
+        scene.addEventListener("arReady", () => {
+            screenLog("AR Sistemi Hazır! Kamerayı resme tutun.", "info");
+        });
+
+        // 2. Hata Yakalama
+        scene.addEventListener("arError", (event) => {
+            screenLog("AR Hatası: " + JSON.stringify(event.detail), "error");
+            screenLog("Dosya yollarını (./aley/...) kontrol edin.", "warn");
+        });
+
+        // 3. Hedef Bulundu
+        target.addEventListener("targetFound", () => {
+            screenLog("Hedef (Resim) Bulundu!", "info");
             video.play();
-            video.pause(); // Sadece yetki almak için oynat-durdur yapıyoruz
-            uiText.innerHTML = "AR Hazır, tabloyu tarayın";
+            // Eğer kullanıcı ekrana dokunduysa sesi açabiliriz
+            video.muted = false; 
+        });
+
+        // 4. Hedef Kayboldu
+        target.addEventListener("targetLost", () => {
+            screenLog("Hedef Kayboldu.", "warn");
+            video.pause();
+        });
+
+        // 5. Video Yükleme Hatası Kontrolü
+        video.addEventListener("error", () => {
+            screenLog("Video dosyası yüklenemedi! './aley/video.mp4' yolunu kontrol edin.", "error");
+        });
+
+        // Kullanıcı ekrana dokununca sesi aktif et
+        document.body.addEventListener('click', () => {
+            video.play().then(() => {
+                video.pause();
+                screenLog("Ses kilidi açıldı.", "info");
+            }).catch(e => {});
         }, {once: true});
 
-        // Hedef bulunduğunda
-        target.addEventListener("targetFound", () => {
-            console.log("Hedef bulundu, video başlatılıyor...");
-            uiText.style.display = "none";
-            video.muted = false; // Video bulununca sesi açar
-            video.play();
-        });
-
-        // Hedef kaybedildiğinde
-        target.addEventListener("targetLost", () => {
-            console.log("Hedef kayboldu.");
-            video.pause();
-            uiText.style.display = "block";
-        });
-
-        // Video dosyasının yüklenip yüklenmediğini kontrol et
-        video.addEventListener('error', (e) => {
-            console.error("Video dosyası yüklenemedi! Dosya adını kontrol edin.");
-            uiText.innerHTML = "Hata: Video bulunamadı!";
-        });
     </script>
 </body>
 </html>
