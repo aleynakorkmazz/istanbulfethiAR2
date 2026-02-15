@@ -1,1 +1,102 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İstanbul'un Fethi - Animasyonlu Geçiş</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Resim Stilleri */
+        #hero-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            transition: opacity 2s ease-in-out, transform 5s ease-out;
+        }
+
+        /* Video Stilleri */
+        #hero-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 2s ease-in-out;
+        }
+
+        /* Resim canlandığında uygulanacak zoom efekti */
+        .zoom-effect {
+            transform: scale(1.1);
+        }
+
+        /* Kaybolma efekti */
+        .fade-out {
+            opacity: 0 !important;
+        }
+
+        /* Görünme efekti */
+        .fade-in {
+            opacity: 1 !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="container">
+    <img src="Zonaro_GatesofConst.jpg" id="hero-image" alt="Zonaro - İstanbul'un Kapıları">
+
+    <video id="hero-video" playsinline>
+        <source src="202602151139 (1).mp4" type="video/mp4">
+        Tarayıcınız video etiketini desteklemiyor.
+    </video>
+</div>
+
+<script>
+    const image = document.getElementById('hero-image');
+    const video = document.getElementById('hero-video');
+
+    window.onload = () => {
+        // 1. Sayfa yüklendiğinde resim hafifçe büyümeye başlar (Canlanma)
+        setTimeout(() => {
+            image.classList.add('zoom-effect');
+        }, 100);
+
+        // 2. 4 saniye sonra resim kararır ve video başlar
+        setTimeout(() => {
+            image.classList.add('fade-out');
+            video.classList.add('fade-in');
+            
+            // Videoyu oynat (Tarayıcı politikaları gereği ses kapalı başlaması gerekebilir)
+            video.play().catch(error => {
+                console.log("Video otomatik başlatılamadı, etkileşim gerekiyor.");
+            });
+        }, 4000); 
+    };
+</script>
+
+</body>
+</html>
