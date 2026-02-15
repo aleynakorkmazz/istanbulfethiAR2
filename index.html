@@ -1,46 +1,30 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    
-    <style>
-      body { margin: 0; overflow: hidden; }
-      /* Ekranın ortasında bir 'Başlat' butonu (Tarayıcıların ses engeli için) */
-      #startButton {
-        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        padding: 15px 30px; font-size: 18px; cursor: pointer; z-index: 999;
-        background-color: #007bff; color: white; border: none; border-radius: 5px;
-      }
-    </style>
-  </head>
-  <body>
-    <button id="startButton">Deneyimi Başlat</button>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    
+    <style>
+      body { margin: 0; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <a-scene 
+      mindar-image="imageTargetSrc: ./aley/targets.mind;" 
+      color-space="sRGB" 
+      renderer="colorManagement: true, physicallyCorrectLights" 
+      vr-mode-ui="enabled: false" 
+      device-orientation-permission-ui="enabled: false">
+      
+      <a-assets>
+        <img id="card" src="./aley/fetih.jpg" />
+        <video id="fetihVideo" src="./aley/video.mp4" preload="auto" loop="true" playsinline webkit-playsinline></video>
+      </a-assets>
 
-    <a-scene 
-      mindar-image="imageTargetSrc: ./aley/targets.mind; autoStart: false;" 
-      color-space="sRGB" 
-      renderer="colorManagement: true, physicallyCorrectLights" 
-      vr-mode-ui="enabled: false" 
-      device-orientation-permission-ui="enabled: false">
-      
-      <a-assets>
-        <img id="card" src="./aley/fetih.jpg">
-        <video id="fetihVideo" 
-               src="./aley/video.mp4" 
-               preload="auto" 
-               loop="true" 
-               playsinline 
-               webkit-playsinline>
-        </video>
-      </a-assets>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <a-entity id="targetContainer" mindar-image-target="targetIndex: 0">
-        <a-entity mindar-image-target="targetIndex: 0">
+      <a-entity mindar-image-target="targetIndex: 0">
   <a-video 
     src="#fetihVideo" 
     width="1" 
@@ -49,29 +33,25 @@
     rotation="0 0 0">
   </a-video>
 </a-entity>
-    </a-scene>
+    </a-scene>
 
-    <script>
-      const startButton = document.querySelector('#startButton');
-      const video = document.querySelector('#fetihVideo');
-      const sceneEl = document.querySelector('a-scene');
-      const targetEl = document.querySelector('#targetContainer');
+    <script>
+      // Video oynatma mantığı: Resim algılandığında oynat, kaybolduğunda durdur.
+      const video = document.querySelector('#fetihVideo');
+      const sceneEl = document.querySelector('a-scene');
+      const targetEl = document.querySelector('[mindar-image-target]');
 
-      // Kullanıcı butona basınca AR ve Video sistemini başlat
-      startButton.addEventListener('click', () => {
-        sceneEl.systems["mindar-image-system"].start();
-        startButton.style.display = "none";
-      });
+      targetEl.addEventListener("targetFound", event => {
+        console.log("Resim bulundu, video başlıyor...");
+        video.play();
+      });
 
-      // Resim göründüğünde videoyu oynat
-      targetEl.addEventListener("targetFound", event => {
-        video.play();
-      });
-
-      // Resim kaybolduğunda videoyu duraklat (Pil tasarrufu)
-      targetEl.addEventListener("targetLost", event => {
-        video.pause();
-      });
-    </script>
-  </body>
+      targetEl.addEventListener("targetLost", event => {
+        console.log("Resim kayboldu, video duruyor.");
+        video.pause();
+      });
+    </script>
+  </body>
 </html>
+
+
